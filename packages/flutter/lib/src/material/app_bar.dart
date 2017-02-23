@@ -3,6 +3,7 @@
 // found in the LICENSE file.
 
 import 'dart:math' as math;
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
@@ -141,7 +142,7 @@ class AppBar extends StatefulWidget {
     this.actions,
     this.flexibleSpace,
     AppBarBottomWidget bottom,
-    this.elevation: 4,
+    this.elevation,
     this.backgroundColor,
     this.brightness,
     this.iconTheme,
@@ -153,7 +154,6 @@ class AppBar extends StatefulWidget {
   }) : bottom = bottom,
        _bottomHeight = bottom?.bottomHeight ?? 0.0,
        super(key: key) {
-    assert(elevation != null);
     assert(primary != null);
     assert(toolbarOpacity != null);
     assert(bottomOpacity != null);
@@ -220,7 +220,7 @@ class AppBar extends StatefulWidget {
   ///
   /// The following elevations have defined shadows: 1, 2, 3, 4, 6, 8, 9, 12, 16, 24
   ///
-  /// Defaults to 4, the appropriate elevation for app bars.
+  /// If not specified, [Theme.of(context).defaultElevation] will be used.
   final int elevation;
 
   /// The color to use for the app bar's material. Typically this should be set
@@ -278,6 +278,13 @@ class AppBar extends StatefulWidget {
 
   final double _bottomHeight;
 
+  /// The platform this AppBar should target.
+  ///
+  /// The platform affects the AppBar's default elevation.
+  ///
+  /// Defaults to [defaultTargetPlatform].
+  final TargetPlatform platform;
+
   /// The height of the toolbar and the [bottom] widget.
   ///
   /// The parent widget should constrain the [AppBar] to a height between this
@@ -286,7 +293,7 @@ class AppBar extends StatefulWidget {
   /// If [primary] is true, the parent should increase this height by the height
   /// of the top padding specified by the [MediaQuery] in scope for the
   /// [AppBar].
-  double get minExtent => kToolbarHeight + _bottomHeight;
+  double get minExtent => _getToolbarHeight() + _bottomHeight;
 
   bool _getEffectiveCenterTitle(ThemeData themeData) {
     if (centerTitle != null)
@@ -300,6 +307,10 @@ class AppBar extends StatefulWidget {
         return true;
     }
     return null;
+  }
+
+  double _getToolbarHeight() {
+    return Theme.of(this).iosDesignLanguage
   }
 
   @override
@@ -470,7 +481,7 @@ class _AppBarState extends State<AppBar> {
 
     return new Material(
       color: config.backgroundColor ?? themeData.primaryColor,
-      elevation: config.elevation,
+      elevation: config.elevation ?? (Theme.of(context).useCupertino ? 0 : 4),
       child: new Align(
         alignment: FractionalOffset.topCenter,
         child: appBar,

@@ -25,6 +25,19 @@ enum Brightness {
   light,
 }
 
+enum DesignLanguage {
+  /// Widgets will always attempt to implement the Material design language,
+  /// regardless of target platform.
+  material,
+
+  /// Widgets will always attempt to implement the iOS design language,
+  /// regardless of target platform.
+  cupertino,
+
+  /// Cupertino widgets and default values will be used on iOS only.
+  native,
+}
+
 // Deriving these values is black magic. The spec claims that pressed buttons
 // have a highlight of 0x66999999, but that's clearly wrong. The videos in the
 // spec show that buttons have a composited highlight of #E1E1E1 on a background
@@ -66,9 +79,14 @@ class ThemeData {
   ///    ([accentColorBrightness]), so that the right contrasting text
   ///    color will be used over the accent color.
   ///
+  ///  * The experimental [cupertinoEnabled] flag, which causes widgets to
+  ///    use the iOS design language when the target platform is iOS.
+  ///
   /// See <https://material.google.com/style/color.html> for
   /// more discussion on how to pick the right colors.
   factory ThemeData({
+    TargetPlatform platform,
+    DesignLanguage designLanguage,
     Brightness brightness,
     Map<int, Color> primarySwatch,
     Color primaryColor,
@@ -99,13 +117,19 @@ class ThemeData {
     IconThemeData iconTheme,
     IconThemeData primaryIconTheme,
     IconThemeData accentIconTheme,
-    TargetPlatform platform
   }) {
+    platform ??= defaultTargetPlatform;
+    designLanguage ??= DesignLanguage.material;
     brightness ??= Brightness.light;
     final bool isDark = brightness == Brightness.dark;
     primarySwatch ??= Colors.blue;
-    primaryColor ??= isDark ? Colors.grey[900] : primarySwatch[500];
-    primaryColorBrightness ??= Brightness.dark;
+    if (designLanguage == DesignLanguage.native && platform == TargetPlatform.iOS) {
+      primaryColor ??= isDark ? Colors.grey[900] : Colors.grey[100];
+      primaryColorBrightness ??= isDark ? Brightness.dark : Brightness.light;
+    } else {
+      primaryColor ??= isDark ? Colors.grey[900] : Colors.primarySwatch[500];
+      primaryColorBrightness ??= Brightness.dark;
+    }
     final bool primaryIsDark = primaryColorBrightness == Brightness.dark;
     accentColor ??= isDark ? Colors.tealAccent[200] : primarySwatch[500];
     accentColorBrightness ??= isDark ? Brightness.light : Brightness.dark;
@@ -132,12 +156,12 @@ class ThemeData {
     iconTheme ??= isDark ? const IconThemeData(color: Colors.white) : const IconThemeData(color: Colors.black);
     primaryIconTheme ??= primaryIsDark ? const IconThemeData(color: Colors.white) : const IconThemeData(color: Colors.black);
     accentIconTheme ??= accentIsDark ? const IconThemeData(color: Colors.white) : const IconThemeData(color: Colors.black);
-    platform ??= defaultTargetPlatform;
     final Typography typography = new Typography(platform: platform);
     textTheme ??= isDark ? typography.white : typography.black;
     primaryTextTheme ??= primaryIsDark ? typography.white : typography.black;
     accentTextTheme ??= accentIsDark ? typography.white : typography.black;
     return new ThemeData.raw(
+      platform: platform,
       brightness: brightness,
       primaryColor: primaryColor,
       primaryColorBrightness: primaryColorBrightness,
@@ -167,7 +191,6 @@ class ThemeData {
       iconTheme: iconTheme,
       primaryIconTheme: primaryIconTheme,
       accentIconTheme: accentIconTheme,
-      platform: platform
     );
   }
 
@@ -178,6 +201,7 @@ class ThemeData {
   /// create intermediate themes based on two themes created with the
   /// [new ThemeData] constructor.
   ThemeData.raw({
+    this.platform,
     this.brightness,
     this.primaryColor,
     this.primaryColorBrightness,
@@ -207,8 +231,8 @@ class ThemeData {
     this.iconTheme,
     this.primaryIconTheme,
     this.accentIconTheme,
-    this.platform
   }) {
+    assert(platform != null);
     assert(brightness != null);
     assert(primaryColor != null);
     assert(primaryColorBrightness != null);
@@ -238,7 +262,6 @@ class ThemeData {
     assert(iconTheme != null);
     assert(primaryIconTheme != null);
     assert(accentIconTheme != null);
-    assert(platform != null);
   }
 
   /// A default light blue theme.
@@ -251,6 +274,20 @@ class ThemeData {
   ///
   /// This is used by [Theme.of] when no theme has been specified.
   factory ThemeData.fallback() => new ThemeData.light();
+
+  /// The platform the material widgets should adapt to target.
+  ///
+  /// Defaults to the current platform.
+  final TargetPlatform platform;
+
+  /// Preferred design language for widgets.
+  ///
+  /// Defaults to material.
+  final DesignLanguage designLanguage;
+
+  /// Whether the preferred design language is Cupertino.
+  bool get useCupertino => (platform == TargetPlatform.iOS &&
+                            designLanguage == DesignLanguage.native);
 
   /// The brightness of the overall theme of the application. Used by widgets
   /// like buttons to determine what color to pick when not using the primary or
@@ -362,11 +399,6 @@ class ThemeData {
 
   /// An icon theme that contrasts with the accent color.
   final IconThemeData accentIconTheme;
-
-  /// The platform the material widgets should adapt to target.
-  ///
-  /// Defaults to the current platform.
-  final TargetPlatform platform;
 
   /// Creates a copy of this theme but with the given fields replaced with the new values.
   ThemeData copyWith({
