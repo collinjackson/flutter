@@ -3193,7 +3193,18 @@ class StatelessElement extends ComponentElement {
   StatelessElement(StatelessWidget widget) : super(widget);
 
   @override
-  StatelessWidget get widget => super.widget;
+  StatelessWidget get widget {
+    assert(() {
+      if (widget is StatelessWidget)
+        return true;
+      throw new FlutterError(
+        'A StatelessElement\'s widget of the incorrect type. This can happen if '
+        'you hot-reload after changing the base class of a StatefulWidget to '
+        'StatelessWidget. If you are hot-reloading, try hot-restarting instead.'
+      );
+    });
+    return super.widget;
+  }
 
   @override
   Widget build() => widget.build(this);
@@ -3263,7 +3274,16 @@ class StatefulElement extends ComponentElement {
   }
 
   @override
-  void update(StatefulWidget newWidget) {
+  void update(Widget newWidget) {
+    assert(() {
+      if (newWidget is StatefulWidget)
+        return true;
+      throw new FlutterError(
+        'Attempted to update() a StatefulWidget with a non-StatefulWidget.'
+        'This happens if you hot-reload after changing the base class of a'
+        'StatefulWidget. If you are hot-reloading, try hot-restarting instead.'
+      );
+    });
     super.update(newWidget);
     assert(widget == newWidget);
     final StatefulWidget oldWidget = _state._widget;
