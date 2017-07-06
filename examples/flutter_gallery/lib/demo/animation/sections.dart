@@ -96,6 +96,11 @@ final List<Section> allSections = <Section>[
       _eyeglassesDetail,
       _eyeglassesDetail,
       _eyeglassesDetail,
+      _eyeglassesDetail,
+      _eyeglassesDetail,
+      _eyeglassesDetail,
+      _eyeglassesDetail,
+      _eyeglassesDetail,
     ],
   ),
   const Section(

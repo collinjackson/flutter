@@ -514,9 +514,7 @@ class _AnimationDemoHomeState extends State<AnimationDemoHome> {
           child: new SectionCard(section: allSections[index]),
           onTapUp: (TapUpDetails details) {
             final double xOffset = details.globalPosition.dx;
-            setState(() {
-              _maybeScroll(midScrollOffset, index, xOffset);
-            });
+            _maybeScroll(midScrollOffset, index, xOffset);
           }
         ),
       ));
@@ -559,54 +557,50 @@ class _AnimationDemoHomeState extends State<AnimationDemoHome> {
             onNotification: (ScrollNotification notification) {
               return _handleScrollNotification(notification, appBarMidScrollOffset);
             },
-            child: new CustomScrollView(
+            child: new NestedScrollView(
               controller: _scrollController,
               physics: new _SnappingScrollPhysics(midScrollOffset: appBarMidScrollOffset),
-              slivers: <Widget>[
-                // Start out below the status bar, gradually move to the top of the screen.
-                new _StatusBarPaddingSliver(
-                  maxHeight: statusBarHeight,
-                  scrollFactor: 7.0,
-                ),
-                // Section Headings
-                new SliverPersistentHeader(
-                  pinned: true,
-                  delegate: new _SliverAppBarDelegate(
-                    minHeight: _kAppBarMinHeight,
-                    maxHeight: appBarMaxHeight,
-                    child: new NotificationListener<ScrollNotification>(
-                      onNotification: (ScrollNotification notification) {
-                        return _handlePageNotification(notification, _headingPageController, _detailsPageController);
-                      },
-                      child: new PageView(
-                        physics: _headingScrollPhysics,
-                        controller: _headingPageController,
-                        children: _allHeadingItems(appBarMaxHeight, appBarMidScrollOffset),
+              headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+                return <Widget>[
+                  // Start out below the status bar, gradually move to the top of the screen.
+                  new _StatusBarPaddingSliver(
+                    maxHeight: statusBarHeight,
+                    scrollFactor: 7.0,
+                  ),
+                  // Section Headings
+                  new SliverPersistentHeader(
+                    pinned: true,
+                    delegate: new _SliverAppBarDelegate(
+                      minHeight: _kAppBarMinHeight,
+                      maxHeight: appBarMaxHeight,
+                      child: new NotificationListener<ScrollNotification>(
+                        onNotification: (ScrollNotification notification) {
+                          return _handlePageNotification(notification, _headingPageController, _detailsPageController);
+                        },
+                        child: new PageView(
+                          physics: _headingScrollPhysics,
+                          controller: _headingPageController,
+                          children: _allHeadingItems(appBarMaxHeight, appBarMidScrollOffset),
+                        ),
                       ),
                     ),
                   ),
+                ];
+              },
+              body: new NotificationListener<ScrollNotification>(
+                onNotification: (ScrollNotification notification) {
+                  return _handlePageNotification(notification, _detailsPageController, _headingPageController);
+                },
+                child: new PageView(
+                  controller: _detailsPageController,
+                  children: allSections.map((Section section) {
+                    // TODO(jackson): More gracefully handle underflow
+                    return new ListView(
+                      children: _detailItemsFor(section).toList(),
+                    );
+                  }).toList(),
                 ),
-                // Details
-                new SliverToBoxAdapter(
-                  child: new SizedBox(
-                    height: 610.0,
-                    child: new NotificationListener<ScrollNotification>(
-                      onNotification: (ScrollNotification notification) {
-                        return _handlePageNotification(notification, _detailsPageController, _headingPageController);
-                      },
-                      child: new PageView(
-                        controller: _detailsPageController,
-                        children: allSections.map((Section section) {
-                          return new Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: _detailItemsFor(section).toList(),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
           new Positioned(
